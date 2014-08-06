@@ -30,25 +30,27 @@ def encryption_cbc(key, plaintext):
 
 
 def decryption_cbc(key, ciphertext):
-    iv = ciphertext[:16]
+    iv = ciphertext[:AES.block_size]
     cipher = AES.new(key, AES.MODE_CBC, iv)
-    plaintext = cipher.decrypt(ciphertext[16:])
+    plaintext = cipher.decrypt(ciphertext[AES.block_size:])
     # remove paddings
     return plaintext.rstrip(plaintext[-1])
 
 
 def encryption_ctr(key, plaintext):
     iv = Random.new().read(AES.block_size)
-    ctr = Counter.new(128, initial_value=long(iv.encode("hex"), 16))
+    ctr = Counter.new(
+        128, initial_value=long(iv.encode("hex"), AES.block_size))
     cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
     return iv + cipher.encrypt(plaintext)
 
 
 def decryption_ctr(key, ciphertext):
-    iv = ciphertext[:16]
-    ctr = Counter.new(128, initial_value=long(iv.encode("hex"), 16))
+    iv = ciphertext[:AES.block_size]
+    ctr = Counter.new(
+        128, initial_value=long(iv.encode("hex"), AES.block_size))
     cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
-    return cipher.decrypt(ciphertext[16:])
+    return cipher.decrypt(ciphertext[AES.block_size:])
 
 # Test Code
 if __name__ == "__main__":
