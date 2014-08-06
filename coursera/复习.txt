@@ -1,0 +1,37 @@
+摘要
+
+Stream Ciphers：
+攻击者: 针对PRG弱点攻击
+安全定义: Semantic Security
+概念: PRG
+算法: 未知
+算法对抗策：未知
+
+Block Ciphers：
+攻击者：Chosen Plaintext Attack
+安全定义: Semantic Security under CPA
+算法：3DES、AES、AES(CBC)、AES(CTR)
+算法对抗：Exhaustive search attacks
+	Quantum attacks(Grover's Algorithm)
+
+Message Authentication Codes:
+攻击者: Chosen Message Attack
+安全定义：Collision Resistance
+算法：CBCMAC、NMAC、PMAC、HMAC
+算法对抗：Generic birthday attacks(Birthday Paradox)
+
+Authenticated Encryption:
+攻击者: Chosen CipherText Attack
+安全定义: Semantic Security under CPA and CCA
+算法: GCM:CTR mode encryption then CW-MAC
+	CCM: CBC-MAC then CTR mode encryption
+	EAX: CTR mode encryption then CMAC
+算法对抗: padding oracle (针对TLS)
+	attacking non-atomic decryption (针对SSH)
+
+KDF
+HKDF
+算法：PBKDF
+算法对抗: Dictionay attack
+
+Deterministic Encryption
