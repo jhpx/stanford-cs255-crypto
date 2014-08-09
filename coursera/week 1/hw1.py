@@ -9,8 +9,8 @@
 # Your goal is to decrypt the last ciphertext, and submit the secret message
 # within it as solution.
 import binascii
-
-ct = [
+import re
+ciphertext = [x.decode('hex') for x in [
     '315c4eeaa8b5f8aaf9174145bf43e1784b8fa00dc71d885a804e5ee9fa40b16349c146'
     'fb778cdf2d3aff021dfff5b403b510d0d0455468aeb98622b137dae857553ccd8883a7'
     'bc37520e06e515d22c954eba5025b8cc57ee59418ce7dc6bc41556bdb36bbca3e87743'
@@ -57,96 +57,88 @@ ct = [
     '32510ba9babebbbefd001547a810e67149caee11d945cd7fc81a05e9f85aac650e9052'
     'ba6a8cd8257bf14d13e6f0a803b54fde9e77472dbff89d71b57bddef121336cb85ccb8'
     'f3315f4b52e301d16e9f52f904'
-]
+]]
 
 class XorDecryptor(object):
 
-    def __init__(ciphertexts):
+    @property
+    def plaintext_possible(self):
+        return self._plaintext_possible
+
+    def __init__(self, ciphertexts, index = -1):
         self._ciphertexts = ciphertexts
-        self._target = ciphertexts[-1]
+
+        self._secrettext = self._ciphertexts[index]
+        self._ciphertexts.pop(index)
+
+        self._ciphertexts_xor = map(
+        (lambda x:strxor(x,self._secrettext))
+        ,self._ciphertexts
+        )
+
+#        print "".join(all_ciphertext_xor[0].encode('hex'))
+
+        self.__init_plaintext_possible()
+
+        pass
+
+    def __init_plaintext_possible(self):
+        """
+        Find all possible positions for a single guess character in plaintext P.
+        ciphertext_xor is CT(another ciphertext) xor S
+
+        Since S = P xor K, we have
+        (CT xor S) xor P = CT xor P xor K xor P = CT xor K = PT(plaintexts)
+        So, we can guess a valid P to keep PT = (CT xor S) xor P still valid.
+        """
+
+        length = len(self._secrettext)
+        size = len(self._ciphertexts)
+
+        self._plaintext_possible = {}
+
+        for s in "abcdefghijklmnopqrstuvwxyz :,.!?":
+            pos_set = set(range(length))
+            for ciphertext_xor in self._ciphertexts_xor:
+                pos_set = filter(
+                lambda x:re.match(r'[a-zA-Z:,.!? \x00]', strxor(ciphertext_xor[x], s)),
+                pos_set
+                )
+
+            for i in pos_set:
+                if i not in self._plaintext_possible.keys():
+                    self._plaintext_possible[i] = {s:1.0/size}
+                elif s in self._plaintext_possible[i].keys():
+                    self._plaintext_possible[i][s] = self._plaintext_possible[i][s] + 1.0/size
+                else:
+                    self._plaintext_possible[i][s] = 1.0/size
+
         pass
 
     pass
 
-#--------------------Part I:Guess----------------------------
-def stringToBytes(string):
-    return [string[x:x+2] for x in range(0,len(string),2)]
-
-def byteToDec(byte):
-    return eval("0x"+byte)
-
-def decToHex(dec):
-    return "%02x"%(dec)
-
-def xor(lst1,lst2=tt_hex,index=0):
-    l = min(len(lst1),len(lst2))
-    result = []
-    for i in range(0,l):
-        result.append(decToHex(byteToDec(lst1[i]) ^ byteToDec(lst2[index+i])))
-    return result
-
-def valid(ch):
-    return (ch>='41' and ch<='5a') or (ch>='61' and ch<='7a') or (ch=='00') or (ch=='20')
-
-def charsToBytes(str):
-    return map (binascii.b2a_hex,str)
-
-def bytesToChars(hex_list):
-    return map (binascii.a2b_hex,hex_list)
-
-def bytesToString(hex_list):
-    return "".join(hex_list)
-
-def checkGuess(guess, xor_list):
-    result = set()
-    for i in range(0,len(xor_list)-len(guess)+1):
-        test = xor(guess,xor_list,i)
-        if reduce(lambda x,y:x and y,map(valid,test),True):
-            result.add(i)
-    return result
-
-def checkAllGuess(guess,all_list):
-    result = checkGuess(guess,all_list[0])
-    for i in range(1,len(all_list)):
-        result = result.intersection(checkGuess(guess,all_list[i]))
-    return result
-
-def findText(gt,ct_xor):
-    guess = charsToBytes(gt)
-    return map(lambda x: (x,gt),checkAllGuess(guess,ct_xor))
-
-def setToTuples(s):
-    indexex = map (lambda x:x[0],s)
-    for i in range(0,len(tt)/2):
-        if not i in indexex:
-            s.update(set([(i,'_')]))
-    return sorted(list(s),key=lambda x:x[0])
-
-def tuplesToString(tuples):
-    return bytesToString(map (lambda x:x[1],tuples))
-
-def strxor(a, b):     # xor two strings of different lengths
+# ---------------------------------------------------------------
+def strxor(a, b):
+    """xor two strings of different lengths"""
     if len(a) > len(b):
         return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a[:len(b)], b)])
     else:
         return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b[:len(a)])])
 
+
+def dict_merge(d1, d2):
+    """merge two dict"""
+
+
 # Test Code
 if __name__ == "__main__":
-    tt = ct[-1]
-    tt_hex = stringToBytes(tt)
-    ct_hex =  map(stringToBytes,ct)
-    ct_xor = map(xor,ct_hex)
-    mm_set = set([])
 
-    print ct_xor
+    d = XorDecryptor(ciphertext)
+    print d.plaintext_possible
 
-    for s in "abcdefghijklmnopqrstuvwxyz :,":
-        mm_set.update(findText(s,ct_xor))
-
-    tuples = setToTuples(mm_set)
-    print tuples
-    print tuplesToString(tuples)
+#    tuples = setToTuples(mm_set)
+#    print tuples
+#    print tuplesToString(tuples)
 
         # machine guess result:
         # th_ secuet_mes_age is: wh__ us_______tr____cipher,_nev_r use the key more than on__
