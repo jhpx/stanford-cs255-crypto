@@ -59,113 +59,118 @@ ciphertext = [x.decode('hex') for x in [
     'f3315f4b52e301d16e9f52f904'
 ]]
 
+
+class SymbolTable(object):
+
+    def __init__(self, N=256):
+        self._sTable = [0] * N
+
+    def __getitem__(self, key):
+        return self._sTable[ord(key)]
+
+    def __setitem__(self, key, value):
+        self._sTable[ord(key)] = value
+
+    @staticmethod
+    def positions(target, source):
+        """Produce all positions of target in source"""
+        pos = -1
+        try:
+            while True:
+                pos = source.index(target, pos + 1)
+                yield pos
+        except ValueError:
+            pass
+
+    @staticmethod
+    def weight(symbol):
+        """Return a reasonable weight for a given symbol"""
+        if (re.match(r'[a-zA-Z \x00]', symbol)):
+            return 10
+        elif(re.match(r'[0-9]', symbol)):
+            return 2
+        elif(re.match(r'[:,.!?]', symbol)):
+            return 1
+        else:
+            return 0
+
+    def symbol(self):
+        target = max(self._sTable)
+        symbols = [chr(i) for i in self.positions(target, self._sTable)]
+        if len(symbols) == 1:
+            return symbols[0]
+        else:
+            return '('+'|'.join(symbols)+')'
+    pass
+
+
 class XorDecryptor(object):
 
-    @property
-    def plaintext_possible(self):
-        return self._plaintext_possible
+    @staticmethod
+    def strxor(a, b):
+        """xor two strings of different lengths"""
+        if len(a) > len(b):
+            strlist = [chr(ord(x) ^ ord(y)) for (x, y) in zip(a[:len(b)], b)]
+        else:
+            strlist = [chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b[:len(a)])]
+        return "".join(strlist)
 
-    def __init__(self, ciphertexts, index = -1):
+    def __init__(self, ciphertexts, index=-1):
         self._ciphertexts = ciphertexts
-
+        self._maxlength = min([len(x) for x in ciphertexts])
         self._secrettext = self._ciphertexts[index]
         self._ciphertexts.pop(index)
 
-        self._ciphertexts_xor = map(
-        (lambda x:strxor(x,self._secrettext))
-        ,self._ciphertexts
+        self._ciphertextsXorT = map(
+            (lambda x: XorDecryptor.strxor(
+                x, self._secrettext)), self._ciphertexts
         )
 
-#        print "".join(all_ciphertext_xor[0].encode('hex'))
-
-        self.__init_plaintext_possible()
+#        print "".join(all_ciphertextXorT[0].encode('hex'))
 
         pass
 
-    def __init_plaintext_possible(self):
+    def plaintext_possible(self):
         """
         Find all possible positions for a single guess character in plaintext P.
-        ciphertext_xor is CT(another ciphertext) xor S
+        ciphertextXorT is CT(another ciphertext) xor C(ciphertext)
 
-        Since S = P xor K, we have
-        (CT xor S) xor P = CT xor P xor K xor P = CT xor K = PT(plaintexts)
-        So, we can guess a valid P to keep PT = (CT xor S) xor P still valid.
+        Since C = P xor K, CT = PT xor K, we have
+        (CT xor C) xor P = CT xor P xor K xor P = CT xor K = PT(plaintext)
+        So, we can guess a valid P to keep PT = (CT xor C) xor P still valid.
         """
-
-        length = len(self._secrettext)
-        size = len(self._ciphertexts)
-
-        self._plaintext_possible = {}
-
-        for s in "abcdefghijklmnopqrstuvwxyz :,.!?":
-            pos_set = set(range(length))
-            for ciphertext_xor in self._ciphertexts_xor:
-                pos_set = filter(
-                lambda x:re.match(r'[a-zA-Z:,.!? \x00]', strxor(ciphertext_xor[x], s)),
-                pos_set
-                )
-
-            for i in pos_set:
-                if i not in self._plaintext_possible.keys():
-                    self._plaintext_possible[i] = {s:1.0/size}
-                elif s in self._plaintext_possible[i].keys():
-                    self._plaintext_possible[i][s] = self._plaintext_possible[i][s] + 1.0/size
-                else:
-                    self._plaintext_possible[i][s] = 1.0/size
-
-        pass
+        plaintext = ''
+        # find the most probable symbol
+        for i in range(self._maxlength):
+            symbolProbability = SymbolTable()
+            for s in "abcdefghijklmnopqrstuvwxyz0123456789 :,.!?":
+                for ciphertextXorT in self._ciphertextsXorT:
+                    xorResult = XorDecryptor.strxor(ciphertextXorT[i], s)
+#                    if(i == 21 and (s == ':' or s == ' ')):
+#                        print '[debug] i={}, s={}, xorResult={}-{}'.format(
+#                            i, s, xorResult, SymbolTable.weight(xorResult))
+                    symbolProbability[s] += SymbolTable.weight(xorResult)
+                symbolProbability[s] += SymbolTable.weight(s)
+#            if (i == 21):
+#                print "[debug] ':'={} ' '={}".format(
+#                    symbolProbability[':'], symbolProbability[' '])
+            plaintext += symbolProbability.symbol()
+        return plaintext
 
     pass
-
-# ---------------------------------------------------------------
-def strxor(a, b):
-    """xor two strings of different lengths"""
-    if len(a) > len(b):
-        return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a[:len(b)], b)])
-    else:
-        return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b[:len(a)])])
-
-
-def dict_merge(d1, d2):
-    """merge two dict"""
 
 
 # Test Code
 if __name__ == "__main__":
+    d = XorDecryptor(ciphertext, 3)
+    print d.plaintext_possible()
 
-    d = XorDecryptor(ciphertext)
-    print d.plaintext_possible
+    d = XorDecryptor(ciphertext, 2)
 
-#    tuples = setToTuples(mm_set)
-#    print tuples
-#    print tuplesToString(tuples)
+    print d.plaintext_possible()
+    d = XorDecryptor(ciphertext, 1)
 
-        # machine guess result:
-        # th_ secuet_mes_age is: wh__ us_______tr____cipher,_nev_r use the key more than on__
-
-
-
-#--------------------Part II: Check and Complete----------------------------
-#
-## human guess result:
-#mm_possible = "The secret message is: When using a stream cipher, never use the key more than once"
-#
-#mm_hex_possible = charsToBytes(mm_possible)
-#kk_hex_possible = xor(mm_hex_possible)
-#print bytesToString(kk_hex_possible)
-#
-#kk_hex = kk_hex_possible
-##kk_hex = stringToBytes("66396e89c9dbd8cc9874352acd6395102eafce78aa7fed28a07f6bc98d29c50b69b0339a19f8aa401a9c6d708f80c066c763fef0123148cdd8e802d05ba98777335daefcecd59c433a6b268b60bf4ef03c9a61")
-#mt_hex = map(lambda x:xor(x,kk_hex),ct_hex)
-#mt_readable = map(bytesToString,map(bytesToChars,mt_hex))
-#
-#mt_gs = charsToBytes('There are two types of cryptography - that which will keep secrets safe from your l')
-#
-#kk_hex = xor(mt_gs,ct_hex[5])
-#print bytesToString(kk_hex)
-#
-#print mt_readable
-#
-#mm_hex = xor(kk_hex,tt_hex)
-#print bytesToString(bytesToChars(mm_hex))
-
+    print d.plaintext_possible()
+#    for i in range(4):
+#        d = XorDecryptor(ciphertext, i)
+#        print d.plaintext_possible()
