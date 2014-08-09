@@ -8,7 +8,7 @@
 # eleven plaintexts with a stream cipher, all with the same stream cipher key.
 # Your goal is to decrypt the last ciphertext, and submit the secret message
 # within it as solution.
-import binascii
+import copy
 import re
 ciphertext = [x.decode('hex') for x in [
     '315c4eeaa8b5f8aaf9174145bf43e1784b8fa00dc71d885a804e5ee9fa40b16349c146'
@@ -116,7 +116,7 @@ class XorDecryptor(object):
         return "".join(strlist)
 
     def __init__(self, ciphertexts, index=-1):
-        self._ciphertexts = ciphertexts
+        self._ciphertexts = copy.copy(ciphertexts)
         self._maxlength = min([len(x) for x in ciphertexts])
         self._secrettext = self._ciphertexts[index]
         self._ciphertexts.pop(index)
@@ -162,15 +162,6 @@ class XorDecryptor(object):
 
 # Test Code
 if __name__ == "__main__":
-    d = XorDecryptor(ciphertext, 3)
-    print d.plaintext_possible()
-
-    d = XorDecryptor(ciphertext, 2)
-
-    print d.plaintext_possible()
-    d = XorDecryptor(ciphertext, 1)
-
-    print d.plaintext_possible()
-#    for i in range(4):
-#        d = XorDecryptor(ciphertext, i)
-#        print d.plaintext_possible()
+    for i in range(11):
+        d = XorDecryptor(ciphertext, i)
+        print d.plaintext_possible()
