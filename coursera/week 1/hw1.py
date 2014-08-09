@@ -132,7 +132,7 @@ class XorDecryptor(object):
 
     def plaintext_possible(self):
         """
-        Find all possible positions for a single guess character in plaintext P.
+        Find all possible positions for a single guess character in plaintext P
         ciphertextXorT is CT(another ciphertext) xor C(ciphertext)
 
         Since C = P xor K, CT = PT xor K, we have

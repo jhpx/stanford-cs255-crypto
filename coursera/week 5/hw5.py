@@ -23,6 +23,7 @@ h = mpz(
 
 B = pow(mpz(2), 20)
 
+
 def dlog(p, g, h, B):
     left = {(h * powmod(g, -i, p)) % p: i for i in xrange(B)}
     gB = powmod(g, B, p)
