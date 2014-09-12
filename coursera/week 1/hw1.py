@@ -10,6 +10,7 @@
 # within it as solution.
 import copy
 import re
+import time
 ciphertext = [x.decode('hex') for x in [
     '315c4eeaa8b5f8aaf9174145bf43e1784b8fa00dc71d885a804e5ee9fa40b16349c146'
     'fb778cdf2d3aff021dfff5b403b510d0d0455468aeb98622b137dae857553ccd8883a7'
@@ -89,7 +90,7 @@ class SymbolTable(object):
             return 10
         elif(re.match(r'[0-9]', symbol)):
             return 2
-        elif(re.match(r'[:,.!?]', symbol)):
+        elif(re.match(r'[:,.\'!?]', symbol)):
             return 1
         else:
             return 0
@@ -146,14 +147,14 @@ class XorDecryptor(object):
             for s in "abcdefghijklmnopqrstuvwxyz0123456789 :,.!?":
                 for ciphertextXorT in self._ciphertextsXorT:
                     xorResult = XorDecryptor.strxor(ciphertextXorT[i], s)
-#                    if(i == 21 and (s == ':' or s == ' ')):
+#                    if(i == 7 and (s == 'u' or s == 'r')):
 #                        print '[debug] i={}, s={}, xorResult={}-{}'.format(
 #                            i, s, xorResult, SymbolTable.weight(xorResult))
                     symbolProbability[s] += SymbolTable.weight(xorResult)
                 symbolProbability[s] += SymbolTable.weight(s)
-#            if (i == 21):
-#                print "[debug] ':'={} ' '={}".format(
-#                    symbolProbability[':'], symbolProbability[' '])
+#            if (i == 7):
+#                print "[debug] 'u'={} 'r'={}".format(
+#                    symbolProbability['u'], symbolProbability['r'])
             plaintext += symbolProbability.symbol()
         return plaintext
 
@@ -162,6 +163,11 @@ class XorDecryptor(object):
 
 # Test Code
 if __name__ == "__main__":
+    t1 = time.time()
+
     for i in range(11):
         d = XorDecryptor(ciphertext, i)
         print d.plaintext_possible()
+
+    t2 = time.time()
+    print "time:", t2 - t1
