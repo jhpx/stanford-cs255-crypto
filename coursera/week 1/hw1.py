@@ -110,10 +110,7 @@ class XorDecryptor(object):
     @staticmethod
     def strxor(a, b):
         """xor two strings of different lengths"""
-        if len(a) > len(b):
-            strlist = [chr(ord(x) ^ ord(y)) for (x, y) in zip(a[:len(b)], b)]
-        else:
-            strlist = [chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b[:len(a)])]
+        strlist = [chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b)]
         return "".join(strlist)
 
     def __init__(self, ciphertexts, index=-1):
